@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>IBM Flashcards & Speech Practice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+    :root {
+      --bg-gradient: radial-gradient(circle at 85% 75%, #1565C0 0%, #0D3875 35%, #051838 75%, #020B1C 100%);
+      --text-main: #FFFFFF;
+      --text-sub: rgba(255, 255, 255, 0.95);
+      --watermark: rgba(100, 181, 246, 0.12);
+      --badge-bg: rgba(255, 255, 255, 0.1);
+      --btn-bg: rgba(255, 255, 255, 0.08);
+      --btn-border: rgba(255, 255, 255, 0.22);
+      --btn-hover: rgba(255, 255, 255, 0.22);
+      --glow: rgba(33, 150, 243, 0.4);
+    }
+    body {
+      background: var(--bg-gradient);
+      background-size: 150% 150%;
+      background-attachment: fixed;
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 28px 20px 24px;
+      transition: background 0.8s ease;
+      overflow-x: hidden;
+      user-select: none;
+    }
+    .header-bar {
+      width: 100%;
+      max-width: 860px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+    .counter-pill {
+      font-size: 0.85rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      font-weight: 700;
+      padding: 7px 18px;
+      border-radius: 999px;
+      background: var(--badge-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--btn-border);
+      color: rgba(255, 255, 255, 0.9);
+    }
+    .mode-tag {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      font-weight: 700;
+      color: #64B5F6;
+    }
+    .card-container {
+      position: relative;
+      width: 100%;
+      max-width: 860px;
+      margin: auto;
+      text-align: center;
+      padding: 30px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 440px;
+    }
+    .watermark-number {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: clamp(14rem, 36vw, 25rem);
+      font-weight: 800;
+      color: var(--watermark);
+      z-index: 1;
+      pointer-events: none;
+      line-height: 1;
+      letter-spacing: -0.05em;
+      filter: blur(2px);
+    }
+    .content-box {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 820px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .view-question {
+      font-size: clamp(2.2rem, 5vw, 3.6rem);
+      font-weight: 700;
+      line-height: 1.25;
+      letter-spacing: -0.03em;
+      color: #FFFFFF;
+      text-shadow: 0 4px 28px rgba(0, 0, 0, 0.5);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .view-answer {
+      display: none;
+      font-size: clamp(1.4rem, 3.2vw, 2.1rem);
+      font-weight: 400;
+      line-height: 1.55;
+      letter-spacing: -0.015em;
+      color: var(--text-sub);
+      text-align: left;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+      background: transparent;
+      border: none;
+      padding: 10px 0;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+    .view-question.hidden { display: none; opacity: 0; }
+    .view-answer.visible { display: block; opacity: 1; transform: translateY(0); }
+    .score-banner {
+      display: none;
+      margin-top: 24px;
+      padding: 14px 24px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--btn-border);
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #FFFFFF;
+    }
+    .score-banner.show { display: inline-flex; align-items: center; gap: 10px; }
+    .speech-transcript {
+      display: none;
+      margin-top: 14px;
+      font-size: 0.95rem;
+      color: rgba(255, 255, 255, 0.7);
+      max-width: 650px;
+      font-style: italic;
+    }
+    .speech-transcript.show { display: block; }
+    .controls {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 15px;
+    }
+    .action-btn {
+      background: var(--btn-bg);
+      color: #FFFFFF;
+      border: 1px solid var(--btn-border);
+      padding: 12px 26px;
+      border-radius: 999px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+      transition: all 0.25s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .action-btn:hover {
+      background: var(--btn-hover);
+      border-color: rgba(255, 255, 255, 0.5);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px var(--glow);
+    }
+    .action-btn.primary {
+      background: rgba(255, 255, 255, 0.18);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+    .action-btn.recording {
+      background: #D32F2F !important;
+      border-color: #FF5252 !important;
+      box-shadow: 0 0 22px rgba(244, 67, 54, 0.8) !important;
+      animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header-bar">
+    <div class="counter-pill" id="counterLabel">01 / --</div>
+    <div class="mode-tag" id="modeTag">PREGUNTA</div>
+  </header>
+
+  <main class="card-container">
+    <div class="watermark-number" id="watermark">01</div>
+    <div class="content-box">
+      <h1 class="view-question" id="questionText">Cargando preguntas...</h1>
+      <div class="view-answer" id="answerText"></div>
+      
+      <div class="score-banner" id="scoreBanner">
+        <span>Puntuación:</span> <strong id="scoreVal">0%</strong> — <span id="scoreGrade"></span>
+      </div>
+      <p class="speech-transcript" id="speechTranscript"></p>
+    </div>
+  </main>
+
+  <footer class="controls">
+    <button class="action-btn" id="btnMic" onclick="toggleRecording()">
+      <span id="micIcon">🎙️</span> <span id="micLabel">Grabar respuesta</span>
+    </button>
+    <button class="action-btn primary" id="btnReveal" onclick="toggleAnswer()">Ver respuesta</button>
+    <button class="action-btn" id="btnNext" onclick="nextCard()">Siguiente</button>
+  </footer>
+
+  <script>
+    const palettes = [
+      { bg: 'radial-gradient(circle at 85% 75%, #1565C0 0%, #0D3875 35%, #051838 75%, #020B1C 100%)', watermark: 'rgba(100, 181, 246, 0.12)', modeColor: '#64B5F6', glow: 'rgba(21, 101, 192, 0.45)' },
+      { bg: 'radial-gradient(circle at 80% 80%, #0052CC 0%, #072B61 40%, #04122B 80%, #020712 100%)', watermark: 'rgba(76, 154, 255, 0.12)', modeColor: '#82B1FF', glow: 'rgba(0, 82, 204, 0.45)' },
+      { bg: 'radial-gradient(circle at 75% 70%, #0288D1 0%, #014C78 35%, #021E36 75%, #010C17 100%)', watermark: 'rgba(79, 195, 247, 0.12)', modeColor: '#4FC3F7', glow: 'rgba(2, 136, 209, 0.45)' },
+      { bg: 'radial-gradient(circle at 85% 75%, #283593 0%, #1A237E 35%, #0D1242 75%, #05071C 100%)', watermark: 'rgba(159, 168, 218, 0.12)', modeColor: '#9FA8DA', glow: 'rgba(40, 53, 147, 0.45)' }
+    ];
+
+    const cards = [
+      { pregunta: "Tell me about yourself and your background in full-stack development.", respuesta: "Certainly! I am Whanderley, a Full-Stack Developer based in Costa Rica with over five years of professional experience building web and mobile applications. Currently, at Bee Loyal Card, I handle end-to-end development across the stack using React, TypeScript, Node.js, and NestJS, backed by PostgreSQL and MySQL databases. My daily responsibilities involve designing RESTful APIs, building backend business logic for customer reward parameters, and managing containerized deployments with Docker and AWS." },
+      { pregunta: "Why are you interested in joining IBM Consulting, and how does your background fit a client-facing role?", respuesta: "I am drawn to IBM Consulting because of its strong focus on long-term client relationships, digital transformation, and leveraging enterprise platforms like Snowflake and cloud infrastructure to drive business impact. Throughout my career, especially in my freelance work and client project implementations at Accenture and Beta Tech, I have worked directly with business stakeholders to translate complex requirements into clean technical deliverables." },
+      { pregunta: "How do you participate in Agile delivery workflows, such as Scrum or Kanban?", respuesta: "In my roles at Bee Loyal Card and Globant, we operated strictly under Scrum frameworks. I participate actively in daily stand-ups to share progress and flag blockers early. During sprint planning, I collaborate with product managers and senior engineers to break down user stories into technical tasks and estimate effort accurately." },
+      { pregunta: "Describe a situation where you had to collaborate with non-technical stakeholders to clarify ambiguous requirements.", respuesta: "During my freelance development projects and while working at Accenture, I frequently encountered business requests that lacked technical specifications. For instance, a client requested an automated customer rewards interface but was unclear on the underlying data rules. I organized a requirements-gathering workshop where I mapped out the user flow using visual wireframes and simplified diagrams. I translated their commercial goals into concrete backend API parameters and validation rules." },
+      { pregunta: "How do you approach code reviews and maintain clean, maintainable code across a software development team?", respuesta: "I believe code reviews are a collaborative tool for quality assurance and knowledge sharing. When reviewing pull requests, I check for readability, adherence to SOLID principles, proper error handling, and test coverage. At Globant, we integrated Sonar for static code analysis to catch vulnerabilities and maintainability smells automatically." },
+      { pregunta: "How do you structure a scalable React and TypeScript application for enterprise environments?", respuesta: "To build a scalable React application, I adopt a feature-based folder structure rather than grouping strictly by file type. I separate UI presentation from business logic by utilizing custom hooks for API calls and state management. TypeScript plays a crucial role: I define strict interfaces and types for API responses, component props, and global state to catch errors at compile time." },
+      { pregunta: "How do you manage state across complex full-stack web applications?", respuesta: "My strategy depends on the scope of the state. For local component state, I use React's useState and useReducer. For global application state—such as user authentication sessions or multi-step checkout flows—I have utilized Redux and Zustand. At Globant and Bee Loyal Card, I also emphasize separating server state from client state by leveraging asynchronous data-fetching patterns." },
+      { pregunta: "What is your approach to automated frontend testing, and how do you ensure high software reliability?", respuesta: "I treat testing as an integral part of the development cycle. At Globant, I maintained approximately 80% automated unit test coverage using Jest and React Testing Library. I focus on testing component behavior from the user's perspective rather than implementation details—verifying form submissions, button interactions, and state renders." },
+      { pregunta: "How do you inspect and optimize web application performance and UI rendering?", respuesta: "I start performance profiling using Chrome DevTools—analyzing the Performance tab, Network requests, and Lighthouse audits. To optimize rendering in React, I prevent unnecessary re-renders using React.memo, useMemo, and useCallback where appropriate. I also implement code-splitting and dynamic imports via React lazy and Suspense to reduce initial bundle sizes." },
+      { pregunta: "Can you explain the differences between Client-Side Rendering (CSR) and Server-Side Rendering (SSR) in Next.js?", respuesta: "Client-Side Rendering (CSR) renders the HTML in the browser via JavaScript, which works great for interactive dashboards behind authentication, but can slow down initial page loads. Server-Side Rendering (SSR) in Next.js pre-renders HTML on the server for each request, delivering faster initial loads and superior SEO performance." },
+      { pregunta: "How do you design and implement scalable RESTful APIs using NestJS and Node.js?", respuesta: "When designing RESTful APIs in NestJS, I strictly follow object-oriented design and modular architecture. I use Controllers to handle HTTP request routing, Data Transfer Objects (DTOs) with class-validator pipes to sanitize incoming payloads, and Services to encapsulate core business logic. NestJS's built-in dependency injection makes services highly testable and loosely coupled." },
+      { pregunta: "How do you handle backend business logic and complex parameter calculations?", respuesta: "At Bee Loyal Card, a major part of my backend role involves developing calculations and dynamic parameters to determine customer rewards based on purchasing behavior. I structure these rules inside dedicated domain service classes in NestJS. I isolate the pricing and point-calculation formulas from database access methods." },
+      { pregunta: "How do you implement authentication, authorization, and basic application security in web APIs?", respuesta: "Security must be embedded into every layer of the backend. For API authentication, I implement JSON Web Tokens (JWT) combined with NestJS Guards to secure protected endpoints. For authorization, I enforce Role-Based Access Control (RBAC) to ensure users only access resource actions allowed by their role." },
+      { pregunta: "What strategies do you use for backend error handling, logging, and production incident resolution?", respuesta: "In NestJS, I implement global Exception Filters to catch unhandled errors and return standardized HTTP error responses to the client, preventing raw stack traces from leaking. For logging, I structure log messages with timestamps, correlation IDs, and context details. Having spent over three years in technical support at Logosoft, I approach incident resolution systematically." },
+      { pregunta: "How do you manage third-party API integrations and asynchronous data processing?", respuesta: "When integrating third-party APIs or processing webhooks, I build abstraction services that handle HTTP communication using NestJS HttpModule or Axios. I implement retry logic and timeout handling to safeguard against third-party downtime. Incoming payloads are validated against interfaces, transformed into internal data structures, and processed asynchronously." },
+      { pregunta: "How do you approach relational database schema design and normalization?", respuesta: "I approach relational database design by first analyzing entity relationships and access requirements. I apply normalization principles (up to Third Normal Form) to eliminate data redundancy and ensure data integrity through foreign key constraints, primary keys, and non-null checks across PostgreSQL, MySQL, and SQL Server." },
+      { pregunta: "How do you write and optimize complex SQL queries for operational data workflows?", respuesta: "Writing efficient SQL is one of my core strengths, starting from my database support background at Logosoft to building full-stack data workflows at Bee Loyal Card. When dealing with slow queries, I analyze the database execution plan (EXPLAIN ANALYZE). I optimize performance by replacing inefficient subqueries with JOINs, applying proper indexes on filtering and join columns, and avoiding SELECT *." },
+      { pregunta: "How do you debug data-related issues, query performance bottlenecks, and schema discrepancies?", respuesta: "Debugging data issues requires tracing data from the client request down to the database table. First, I verify the payload structure sent by the frontend using network inspector tools. Next, I inspect backend logs to verify how parameters are parsed into the database query. If query execution is slow, I execute the query directly in SQL tools, checking data types, NULL handling, and index usage." },
+      { pregunta: "What is your understanding of cloud data platforms like Snowflake and their role in data-driven full-stack applications?", respuesta: "While traditional relational databases like PostgreSQL handle transactional processing (OLTP), cloud data platforms like Snowflake are engineered for large-scale data warehousing and analytics (OLAP). In a full-stack consulting architecture—such as those at IBM—Snowflake acts as the central data hub. Full-stack applications interact with Snowflake via specialized data drivers or REST APIs." },
+      { pregunta: "How do you maintain data quality, data integrity, and basic governance in application data workflows?", respuesta: "Maintaining data quality starts at the ingestion point. In NestJS APIs, I enforce validation pipes using class-validator to guarantee that incoming payloads meet strict type and format criteria before reaching the database. At the database level, I rely on schema constraints (CHECK, UNIQUE, NOT NULL) and database transactions to prevent partial data writes." },
+      { pregunta: "Can you explain client-server architecture and key HTTP protocol fundamentals?", respuesta: "Client-server architecture separates the user interface layer from the data management and business logic layer. The client initiates HTTP requests, and the server processes them and returns responses over TCP/IP. Key HTTP fundamentals include request methods (GET, POST, PUT, DELETE) and status codes (200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, 500 Internal Server Error)." },
+      { pregunta: "How do you utilize Docker containers in your software development and deployment workflows?", respuesta: "At Bee Loyal Card, I use Docker to containerize our Node.js/NestJS backend services and frontend web applications. Docker ensures environment parity between local development, testing, and cloud environments. I write multi-stage Dockerfiles to keep production image sizes small and secure, and use docker-compose for local development environments." },
+      { pregunta: "What experience do you have with cloud platforms such as AWS and CI/CD pipelines?", respuesta: "In my full-stack engineering work, I deploy and support applications hosted on AWS infrastructure, using services like EC2, S3 for static frontend assets, and containerized deployment environments. I am familiar with CI/CD workflows using GitHub Actions to run Jest test suites, execute static code checks, build Docker images, and trigger deployments." },
+      { pregunta: "How do you approach root-cause analysis when a critical incident occurs across the application stack?", respuesta: "When a production incident arises, my first priority is containment and clear communication, followed by systematic root-cause analysis: 1. Symptom Verification inspecting client console and HTTP responses; 2. Backend Log Tracing checking server logs and Docker container streams; 3. Database Audit running diagnostic SQL queries to inspect table locks and query performance." },
+      { pregunta: "How do you leverage AI-assisted tools like Claude Code and ChatGPT Codex in your software engineering workflow?", respuesta: "I actively integrate AI-assisted development tools into my daily workflow at Bee Loyal Card to enhance developer productivity while maintaining strict code quality. I use AI to rapidly generate boilerplate code, draft initial Jest unit tests, write complex regular expressions, and assist in refactoring legacy functions, thoroughly reviewing and testing all generated code." }
+    ];
+
+    let currentIndex = 0;
+    let showingAnswer = false;
+    let recognition = null;
+    let isRecording = false;
+    let fullTranscript = '';
+
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    function initSpeechEngine() {
+      if (!SpeechRec) return null;
+      const rec = new SpeechRec();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = 'en-US';
+
+      rec.onresult = (event) => {
+        let currentText = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          currentText += event.results[i][0].transcript;
+        }
+        if (currentText.trim()) {
+          fullTranscript = currentText;
+          const transcriptEl = document.getElementById('speechTranscript');
+          transcriptEl.textContent = `Dijiste: "${fullTranscript}"`;
+          transcriptEl.classList.add('show');
+        }
+      };
+
+      rec.onerror = (event) => {
+        console.error('Error de micrófono:', event.error);
+        stopRecording();
+      };
+
+      rec.onend = () => {
+        if (isRecording) stopRecording();
+      };
+
+      return rec;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderCard();
+    });
+
+    function applyPalette(index) {
+      const p = palettes[index % palettes.length];
+      const root = document.documentElement;
+      root.style.setProperty('--bg-gradient', p.bg);
+      root.style.setProperty('--watermark', p.watermark);
+      root.style.setProperty('--glow', p.glow);
+      document.getElementById('modeTag').style.color = p.modeColor;
+    }
+
+    function renderCard() {
+      const card = cards[currentIndex];
+      const displayNum = String(currentIndex + 1).padStart(2, '0');
+
+      applyPalette(currentIndex);
+
+      document.getElementById('watermark').textContent = displayNum;
+      document.getElementById('counterLabel').textContent = `${displayNum} / ${String(cards.length).padStart(2, '0')}`;
+      document.getElementById('questionText').textContent = card.pregunta;
+      document.getElementById('answerText').textContent = card.respuesta;
+
+      resetSpeechFeedback();
+      showingAnswer = false;
+      showQuestionView();
+    }
+
+    function resetSpeechFeedback() {
+      if (isRecording) stopRecording();
+      fullTranscript = '';
+      document.getElementById('scoreBanner').classList.remove('show');
+      document.getElementById('speechTranscript').classList.remove('show');
+    }
+
+    function showQuestionView() {
+      const q = document.getElementById('questionText');
+      const a = document.getElementById('answerText');
+      const btn = document.getElementById('btnReveal');
+      const tag = document.getElementById('modeTag');
+
+      a.classList.remove('visible');
+      setTimeout(() => {
+        a.style.display = 'none';
+        q.style.display = 'block';
+        setTimeout(() => q.classList.remove('hidden'), 20);
+      }, 150);
+
+      btn.textContent = 'Ver respuesta';
+      tag.textContent = 'PREGUNTA';
+    }
+
+    function showAnswerView() {
+      const q = document.getElementById('questionText');
+      const a = document.getElementById('answerText');
+      const btn = document.getElementById('btnReveal');
+      const tag = document.getElementById('modeTag');
+
+      q.classList.add('hidden');
+      setTimeout(() => {
+        q.style.display = 'none';
+        a.style.display = 'block';
+        setTimeout(() => a.classList.add('visible'), 20);
+      }, 150);
+
+      btn.textContent = 'Ver pregunta';
+      tag.textContent = 'RESPUESTA';
+    }
+
+    function toggleAnswer() {
+      showingAnswer = !showingAnswer;
+      if (showingAnswer) showAnswerView();
+      else showQuestionView();
+    }
+
+    function nextCard() {
+      currentIndex = (currentIndex + 1) % cards.length;
+      renderCard();
+    }
+
+    function toggleRecording() {
+      if (!SpeechRec) {
+        alert('Usa Google Chrome o Microsoft Edge para soporte de micrófono.');
+        return;
+      }
+      if (isRecording) stopRecording();
+      else startRecording();
+    }
+
+    function startRecording() {
+      fullTranscript = '';
+      document.getElementById('speechTranscript').classList.remove('show');
+      document.getElementById('scoreBanner').classList.remove('show');
+
+      if (!recognition) recognition = initSpeechEngine();
+
+      try {
+        recognition.start();
+        isRecording = true;
+        const btn = document.getElementById('btnMic');
+        btn.classList.add('recording');
+        document.getElementById('micLabel').textContent = 'Detener y calificar';
+        document.getElementById('micIcon').textContent = '⏹️';
+      } catch (err) {
+        console.error(err);
+        isRecording = false;
+      }
+    }
+
+    function stopRecording() {
+      isRecording = false;
+      const btn = document.getElementById('btnMic');
+      btn.classList.remove('recording');
+      document.getElementById('micLabel').textContent = 'Grabar respuesta';
+      document.getElementById('micIcon').textContent = '🎙️';
+
+      if (recognition) {
+        try { recognition.stop(); } catch (e) {}
+      }
+
+      setTimeout(() => {
+        evaluateAccuracy(fullTranscript, cards[currentIndex].respuesta);
+      }, 450);
+    }
+
+    function evaluateAccuracy(userSpeech, targetAnswer) {
+      if (!userSpeech || userSpeech.trim().length === 0) {
+        alert('No se detectaron palabras en inglés. Intenta de nuevo hablando con claridad.');
+        return;
+      }
+
+      const clean = (text) => text.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 2);
+      const userWords = new Set(clean(userSpeech));
+      const targetWords = clean(targetAnswer);
+
+      if (targetWords.length === 0) return;
+
+      let matches = 0;
+      targetWords.forEach(word => {
+        if (userWords.has(word)) matches++;
+      });
+
+      let coverage = (matches / targetWords.length) * 100;
+      let score = Math.min(100, Math.round(coverage * 1.35));
+      if (userWords.size >= 8 && score < 40) score = 45;
+
+      const banner = document.getElementById('scoreBanner');
+      const scoreVal = document.getElementById('scoreVal');
+      const scoreGrade = document.getElementById('scoreGrade');
+
+      scoreVal.textContent = `${score}%`;
+
+      if (score >= 80) {
+        scoreGrade.textContent = '🌟 ¡Excelente dominio!';
+        scoreVal.style.color = '#4CAF50';
+      } else if (score >= 55) {
+        scoreGrade.textContent = '👍 Buena respuesta, cubre los puntos clave';
+        scoreVal.style.color = '#FFCA28';
+      } else {
+        scoreGrade.textContent = '💡 Puedes detallar más conceptos técnicos';
+        scoreVal.style.color = '#FF8A65';
+      }
+
+      banner.classList.add('show');
+      if (!showingAnswer) toggleAnswer();
+    }
+  </script>
+</body>
+</html>
