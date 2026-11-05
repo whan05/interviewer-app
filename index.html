@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>IBM Flashcards & Speech Practice</title>
+  <title>IBM Full-Stack Flashcards & Speech Practice</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -267,9 +267,12 @@
 
     let currentIndex = 0;
     let showingAnswer = false;
+
+    // --- RECONOCIMIENTO DE VOZ CONTINUO Y ACUMULATIVO ---
     let recognition = null;
     let isRecording = false;
     let fullTranscript = '';
+    let finalAccumulatedText = '';
 
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -281,25 +284,35 @@
       rec.lang = 'en-US';
 
       rec.onresult = (event) => {
-        let currentText = '';
+        let interimTranscript = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-          currentText += event.results[i][0].transcript;
+          const piece = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalAccumulatedText += (finalAccumulatedText ? ' ' : '') + piece.trim();
+          } else {
+            interimTranscript += piece;
+          }
         }
-        if (currentText.trim()) {
-          fullTranscript = currentText;
-          const transcriptEl = document.getElementById('speechTranscript');
-          transcriptEl.textContent = `Dijiste: "${fullTranscript}"`;
-          transcriptEl.classList.add('show');
-        }
+        fullTranscript = (finalAccumulatedText + ' ' + interimTranscript).trim();
+        const transcriptEl = document.getElementById('speechTranscript');
+        transcriptEl.textContent = `Dijiste: "${fullTranscript}"`;
+        transcriptEl.classList.add('show');
       };
 
       rec.onerror = (event) => {
-        console.error('Error de micrófono:', event.error);
-        stopRecording();
+        if (event.error === 'no-speech') return;
+        console.warn('SpeechRecognition error:', event.error);
       };
 
+      // Si el navegador corta por silencio antes de presionar detener, reanuda de inmediato
       rec.onend = () => {
-        if (isRecording) stopRecording();
+        if (isRecording) {
+          try {
+            rec.start();
+          } catch (e) {
+            console.log('Reanudando escucha...', e);
+          }
+        }
       };
 
       return rec;
@@ -337,6 +350,7 @@
     function resetSpeechFeedback() {
       if (isRecording) stopRecording();
       fullTranscript = '';
+      finalAccumulatedText = '';
       document.getElementById('scoreBanner').classList.remove('show');
       document.getElementById('speechTranscript').classList.remove('show');
     }
@@ -388,7 +402,7 @@
 
     function toggleRecording() {
       if (!SpeechRec) {
-        alert('Usa Google Chrome o Microsoft Edge para soporte de micrófono.');
+        alert('Usa Google Chrome o Microsoft Edge para soporte completo de micrófono.');
         return;
       }
       if (isRecording) stopRecording();
@@ -397,21 +411,22 @@
 
     function startRecording() {
       fullTranscript = '';
+      finalAccumulatedText = '';
       document.getElementById('speechTranscript').classList.remove('show');
       document.getElementById('scoreBanner').classList.remove('show');
 
       if (!recognition) recognition = initSpeechEngine();
 
+      isRecording = true;
+      const btn = document.getElementById('btnMic');
+      btn.classList.add('recording');
+      document.getElementById('micLabel').textContent = 'Detener y calificar';
+      document.getElementById('micIcon').textContent = '⏹️';
+
       try {
         recognition.start();
-        isRecording = true;
-        const btn = document.getElementById('btnMic');
-        btn.classList.add('recording');
-        document.getElementById('micLabel').textContent = 'Detener y calificar';
-        document.getElementById('micIcon').textContent = '⏹️';
       } catch (err) {
-        console.error(err);
-        isRecording = false;
+        console.warn('Ya iniciado:', err);
       }
     }
 
