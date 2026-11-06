@@ -101,6 +101,14 @@
       align-items: center;
       justify-content: center;
     }
+    .clickable-card-area {
+      cursor: pointer;
+      width: 100%;
+      transition: transform 0.15s ease;
+    }
+    .clickable-card-area:hover .view-question {
+      text-shadow: 0 6px 32px rgba(255, 255, 255, 0.25);
+    }
     .view-question {
       font-size: clamp(2.2rem, 5vw, 3.6rem);
       font-weight: 700;
@@ -128,6 +136,14 @@
     }
     .view-question.hidden { display: none; opacity: 0; }
     .view-answer.visible { display: block; opacity: 1; transform: translateY(0); }
+    .tap-hint {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      opacity: 0.45;
+      margin-top: 14px;
+      font-weight: 600;
+    }
     .score-banner {
       display: none;
       margin-top: 24px;
@@ -146,9 +162,10 @@
       display: none;
       margin-top: 14px;
       font-size: 0.95rem;
-      color: rgba(255, 255, 255, 0.7);
-      max-width: 650px;
+      color: rgba(255, 255, 255, 0.75);
+      max-width: 680px;
       font-style: italic;
+      line-height: 1.5;
     }
     .speech-transcript.show { display: block; }
     .controls {
@@ -164,7 +181,7 @@
       background: var(--btn-bg);
       color: #FFFFFF;
       border: 1px solid var(--btn-border);
-      padding: 12px 26px;
+      padding: 12px 24px;
       border-radius: 999px;
       font-size: 0.92rem;
       font-weight: 600;
@@ -211,8 +228,12 @@
   <main class="card-container">
     <div class="watermark-number" id="watermark">01</div>
     <div class="content-box">
-      <h1 class="view-question" id="questionText">Cargando preguntas...</h1>
-      <div class="view-answer" id="answerText"></div>
+      <!-- Área clicable para alternar pregunta/respuesta tocando la pantalla -->
+      <div class="clickable-card-area" onclick="toggleAnswer()" title="Toca para ver u ocultar respuesta">
+        <h1 class="view-question" id="questionText">Cargando preguntas...</h1>
+        <div class="view-answer" id="answerText"></div>
+      </div>
+      <div class="tap-hint" id="tapHint">Toca el texto para alternar</div>
       
       <div class="score-banner" id="scoreBanner">
         <span>Puntuación:</span> <strong id="scoreVal">0%</strong> — <span id="scoreGrade"></span>
@@ -222,11 +243,16 @@
   </main>
 
   <footer class="controls">
+    <button class="action-btn" id="btnPrev" onclick="prevCard()">
+      <span>←</span> <span>Anterior</span>
+    </button>
     <button class="action-btn" id="btnMic" onclick="toggleRecording()">
       <span id="micIcon">🎙️</span> <span id="micLabel">Grabar respuesta</span>
     </button>
     <button class="action-btn primary" id="btnReveal" onclick="toggleAnswer()">Ver respuesta</button>
-    <button class="action-btn" id="btnNext" onclick="nextCard()">Siguiente</button>
+    <button class="action-btn" id="btnNext" onclick="nextCard()">
+      <span>Siguiente</span> <span>→</span>
+    </button>
   </footer>
 
   <script>
@@ -268,15 +294,16 @@
     let currentIndex = 0;
     let showingAnswer = false;
 
-    // --- RECONOCIMIENTO DE VOZ CONTINUO Y ACUMULATIVO ---
+    // --- RECONOCIMIENTO DE VOZ CONTINUO A PRUEBA DE CORTES ---
     let recognition = null;
     let isRecording = false;
     let fullTranscript = '';
     let finalAccumulatedText = '';
+    let restartTimer = null;
 
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    function initSpeechEngine() {
+    function buildSpeechEngine() {
       if (!SpeechRec) return null;
       const rec = new SpeechRec();
       rec.continuous = true;
@@ -300,18 +327,26 @@
       };
 
       rec.onerror = (event) => {
-        if (event.error === 'no-speech') return;
+        if (event.error === 'no-speech' || event.error === 'network') {
+          return;
+        }
         console.warn('SpeechRecognition error:', event.error);
       };
 
-      // Si el navegador corta por silencio antes de presionar detener, reanuda de inmediato
+      // Si Chrome corta la conexión por silencio o timeout de buffer, se relanza automáticamente
       rec.onend = () => {
         if (isRecording) {
-          try {
-            rec.start();
-          } catch (e) {
-            console.log('Reanudando escucha...', e);
-          }
+          clearTimeout(restartTimer);
+          restartTimer = setTimeout(() => {
+            if (isRecording) {
+              try {
+                recognition = buildSpeechEngine();
+                recognition.start();
+              } catch (e) {
+                console.log('Error al reanudar rec:', e);
+              }
+            }
+          }, 60);
         }
       };
 
@@ -389,12 +424,20 @@
       tag.textContent = 'RESPUESTA';
     }
 
+    // Alternar entre pregunta y respuesta
     function toggleAnswer() {
       showingAnswer = !showingAnswer;
       if (showingAnswer) showAnswerView();
       else showQuestionView();
     }
 
+    // Navegar a la tarjeta anterior
+    function prevCard() {
+      currentIndex = (currentIndex - 1 + cards.length) % cards.length;
+      renderCard();
+    }
+
+    // Navegar a la siguiente tarjeta
     function nextCard() {
       currentIndex = (currentIndex + 1) % cards.length;
       renderCard();
@@ -415,8 +458,6 @@
       document.getElementById('speechTranscript').classList.remove('show');
       document.getElementById('scoreBanner').classList.remove('show');
 
-      if (!recognition) recognition = initSpeechEngine();
-
       isRecording = true;
       const btn = document.getElementById('btnMic');
       btn.classList.add('recording');
@@ -424,14 +465,20 @@
       document.getElementById('micIcon').textContent = '⏹️';
 
       try {
+        if (recognition) {
+          try { recognition.abort(); } catch (e) {}
+        }
+        recognition = buildSpeechEngine();
         recognition.start();
       } catch (err) {
-        console.warn('Ya iniciado:', err);
+        console.warn('Error al iniciar micrófono:', err);
       }
     }
 
     function stopRecording() {
       isRecording = false;
+      clearTimeout(restartTimer);
+
       const btn = document.getElementById('btnMic');
       btn.classList.remove('recording');
       document.getElementById('micLabel').textContent = 'Grabar respuesta';
@@ -443,12 +490,12 @@
 
       setTimeout(() => {
         evaluateAccuracy(fullTranscript, cards[currentIndex].respuesta);
-      }, 450);
+      }, 500);
     }
 
     function evaluateAccuracy(userSpeech, targetAnswer) {
       if (!userSpeech || userSpeech.trim().length === 0) {
-        alert('No se detectaron palabras en inglés. Intenta de nuevo hablando con claridad.');
+        alert('No se detectaron palabras en inglés. Asegúrate de hablar claro y probar nuevamente.');
         return;
       }
 
