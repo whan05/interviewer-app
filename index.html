@@ -174,16 +174,16 @@
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 12px;
+      gap: 10px;
       margin-top: 15px;
     }
     .action-btn {
       background: var(--btn-bg);
       color: #FFFFFF;
       border: 1px solid var(--btn-border);
-      padding: 12px 24px;
+      padding: 11px 22px;
       border-radius: 999px;
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       font-weight: 600;
       cursor: pointer;
       font-family: inherit;
@@ -193,7 +193,7 @@
       transition: all 0.25s ease;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 7px;
     }
     .action-btn:hover {
       background: var(--btn-hover);
@@ -210,6 +210,12 @@
       border-color: #FF5252 !important;
       box-shadow: 0 0 22px rgba(244, 67, 54, 0.8) !important;
       animation: pulse 1.2s infinite;
+    }
+    .action-btn.speaking {
+      background: #0288D1 !important;
+      border-color: #4FC3F7 !important;
+      box-shadow: 0 0 20px rgba(79, 195, 247, 0.7) !important;
+      animation: pulse 1.4s infinite;
     }
     @keyframes pulse {
       0% { transform: scale(1); }
@@ -228,7 +234,6 @@
   <main class="card-container">
     <div class="watermark-number" id="watermark">01</div>
     <div class="content-box">
-      <!-- Área clicable para alternar pregunta/respuesta tocando la pantalla -->
       <div class="clickable-card-area" onclick="toggleAnswer()" title="Toca para ver u ocultar respuesta">
         <h1 class="view-question" id="questionText">Cargando preguntas...</h1>
         <div class="view-answer" id="answerText"></div>
@@ -246,8 +251,11 @@
     <button class="action-btn" id="btnPrev" onclick="prevCard()">
       <span>←</span> <span>Anterior</span>
     </button>
+    <button class="action-btn" id="btnSpeak" onclick="toggleSpeech()">
+      <span id="speakerIcon">🔊</span> <span id="speakerLabel">Escuchar</span>
+    </button>
     <button class="action-btn" id="btnMic" onclick="toggleRecording()">
-      <span id="micIcon">🎙️</span> <span id="micLabel">Grabar respuesta</span>
+      <span id="micIcon">🎙️</span> <span id="micLabel">Grabar</span>
     </button>
     <button class="action-btn primary" id="btnReveal" onclick="toggleAnswer()">Ver respuesta</button>
     <button class="action-btn" id="btnNext" onclick="nextCard()">
@@ -327,13 +335,10 @@
       };
 
       rec.onerror = (event) => {
-        if (event.error === 'no-speech' || event.error === 'network') {
-          return;
-        }
+        if (event.error === 'no-speech' || event.error === 'network') return;
         console.warn('SpeechRecognition error:', event.error);
       };
 
-      // Si Chrome corta la conexión por silencio o timeout de buffer, se relanza automáticamente
       rec.onend = () => {
         if (isRecording) {
           clearTimeout(restartTimer);
@@ -353,6 +358,87 @@
       return rec;
     }
 
+    // --- SÍNTESIS DE VOZ CON INGLÉS AMERICANO NATURAL (TTS) ---
+    let isSpeaking = false;
+    let selectedVoice = null;
+
+    function loadAmericanVoices() {
+      if (!('speechSynthesis' in window)) return;
+      const voices = window.speechSynthesis.getVoices();
+      
+      // Priorizar voces en-US de alta calidad (Google US English, Natural, Samantha, David)
+      selectedVoice = voices.find(v => v.lang === 'en-US' && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha')))
+        || voices.find(v => v.lang === 'en-US' || v.lang === 'en_US')
+        || voices.find(v => v.lang.startsWith('en'));
+    }
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = loadAmericanVoices;
+      loadAmericanVoices();
+    }
+
+    function toggleSpeech() {
+      if (!('speechSynthesis' in window)) {
+        alert('La síntesis de voz no está soportada en tu navegador.');
+        return;
+      }
+
+      if (isSpeaking) {
+        stopSpeech();
+      } else {
+        startSpeech();
+      }
+    }
+
+    function startSpeech() {
+      window.speechSynthesis.cancel();
+      if (isRecording) stopRecording();
+
+      const textToRead = cards[currentIndex].respuesta;
+      const utterance = new SpeechSynthesisUtterance(textToRead);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.96;
+      utterance.pitch = 1.0;
+
+      if (!selectedVoice) loadAmericanVoices();
+      if (selectedVoice) utterance.voice = selectedVoice;
+
+      utterance.onstart = () => {
+        isSpeaking = true;
+        const btn = document.getElementById('btnSpeak');
+        btn.classList.add('speaking');
+        document.getElementById('speakerIcon').textContent = '⏹️';
+        document.getElementById('speakerLabel').textContent = 'Pausar';
+      };
+
+      utterance.onend = () => {
+        stopSpeechUI();
+      };
+
+      utterance.onerror = () => {
+        stopSpeechUI();
+      };
+
+      if (!showingAnswer) {
+        toggleAnswer();
+      }
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function stopSpeech() {
+      window.speechSynthesis.cancel();
+      stopSpeechUI();
+    }
+
+    function stopSpeechUI() {
+      isSpeaking = false;
+      const btn = document.getElementById('btnSpeak');
+      btn.classList.remove('speaking');
+      document.getElementById('speakerIcon').textContent = '🔊';
+      document.getElementById('speakerLabel').textContent = 'Escuchar';
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       renderCard();
     });
@@ -367,6 +453,7 @@
     }
 
     function renderCard() {
+      stopSpeech();
       const card = cards[currentIndex];
       const displayNum = String(currentIndex + 1).padStart(2, '0');
 
@@ -424,20 +511,17 @@
       tag.textContent = 'RESPUESTA';
     }
 
-    // Alternar entre pregunta y respuesta
     function toggleAnswer() {
       showingAnswer = !showingAnswer;
       if (showingAnswer) showAnswerView();
       else showQuestionView();
     }
 
-    // Navegar a la tarjeta anterior
     function prevCard() {
       currentIndex = (currentIndex - 1 + cards.length) % cards.length;
       renderCard();
     }
 
-    // Navegar a la siguiente tarjeta
     function nextCard() {
       currentIndex = (currentIndex + 1) % cards.length;
       renderCard();
@@ -448,6 +532,7 @@
         alert('Usa Google Chrome o Microsoft Edge para soporte completo de micrófono.');
         return;
       }
+      stopSpeech();
       if (isRecording) stopRecording();
       else startRecording();
     }
@@ -461,7 +546,7 @@
       isRecording = true;
       const btn = document.getElementById('btnMic');
       btn.classList.add('recording');
-      document.getElementById('micLabel').textContent = 'Detener y calificar';
+      document.getElementById('micLabel').textContent = 'Detener';
       document.getElementById('micIcon').textContent = '⏹️';
 
       try {
@@ -481,7 +566,7 @@
 
       const btn = document.getElementById('btnMic');
       btn.classList.remove('recording');
-      document.getElementById('micLabel').textContent = 'Grabar respuesta';
+      document.getElementById('micLabel').textContent = 'Grabar';
       document.getElementById('micIcon').textContent = '🎙️';
 
       if (recognition) {
