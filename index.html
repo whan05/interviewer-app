@@ -13,12 +13,12 @@
       --bg-gradient: radial-gradient(circle at 85% 75%, #1565C0 0%, #0D3875 35%, #051838 75%, #020B1C 100%);
       --text-main: #FFFFFF;
       --text-sub: rgba(255, 255, 255, 0.95);
-      --watermark: rgba(100, 181, 246, 0.12);
+      --watermark: rgba(255, 255, 255, 0.1);
       --badge-bg: rgba(255, 255, 255, 0.1);
       --btn-bg: rgba(255, 255, 255, 0.08);
       --btn-border: rgba(255, 255, 255, 0.22);
       --btn-hover: rgba(255, 255, 255, 0.22);
-      --glow: rgba(33, 150, 243, 0.4);
+      --glow: rgba(255, 255, 255, 0.25);
     }
     body {
       background: var(--bg-gradient);
@@ -62,7 +62,8 @@
       text-transform: uppercase;
       letter-spacing: 0.15em;
       font-weight: 700;
-      color: #64B5F6;
+      color: var(--theme-accent, #64B5F6);
+      transition: color 0.5s ease;
     }
     .card-container {
       position: relative;
@@ -90,6 +91,7 @@
       line-height: 1;
       letter-spacing: -0.05em;
       filter: blur(2px);
+      transition: color 0.6s ease;
     }
     .content-box {
       position: relative;
@@ -107,7 +109,7 @@
       transition: transform 0.15s ease;
     }
     .clickable-card-area:hover .view-question {
-      text-shadow: 0 6px 32px rgba(255, 255, 255, 0.25);
+      text-shadow: 0 6px 32px rgba(255, 255, 255, 0.3);
     }
     .view-question {
       font-size: clamp(2.2rem, 5vw, 3.6rem);
@@ -143,6 +145,14 @@
       opacity: 0.45;
       margin-top: 14px;
       font-weight: 600;
+    }
+    .voice-badge {
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.55;
+      margin-top: 6px;
+      font-weight: 500;
     }
     .score-banner {
       display: none;
@@ -212,9 +222,9 @@
       animation: pulse 1.2s infinite;
     }
     .action-btn.speaking {
-      background: #0288D1 !important;
-      border-color: #4FC3F7 !important;
-      box-shadow: 0 0 20px rgba(79, 195, 247, 0.7) !important;
+      background: var(--theme-accent, #0288D1) !important;
+      border-color: #FFFFFF !important;
+      box-shadow: 0 0 22px var(--glow) !important;
       animation: pulse 1.4s infinite;
     }
     @keyframes pulse {
@@ -239,6 +249,7 @@
         <div class="view-answer" id="answerText"></div>
       </div>
       <div class="tap-hint" id="tapHint">Toca el texto para alternar</div>
+      <div class="voice-badge" id="voiceBadge">Voz: Detectando mejor acento US...</div>
       
       <div class="score-banner" id="scoreBanner">
         <span>Puntuación:</span> <strong id="scoreVal">0%</strong> — <span id="scoreGrade"></span>
@@ -265,10 +276,54 @@
 
   <script>
     const palettes = [
-      { bg: 'radial-gradient(circle at 85% 75%, #1565C0 0%, #0D3875 35%, #051838 75%, #020B1C 100%)', watermark: 'rgba(100, 181, 246, 0.12)', modeColor: '#64B5F6', glow: 'rgba(21, 101, 192, 0.45)' },
-      { bg: 'radial-gradient(circle at 80% 80%, #0052CC 0%, #072B61 40%, #04122B 80%, #020712 100%)', watermark: 'rgba(76, 154, 255, 0.12)', modeColor: '#82B1FF', glow: 'rgba(0, 82, 204, 0.45)' },
-      { bg: 'radial-gradient(circle at 75% 70%, #0288D1 0%, #014C78 35%, #021E36 75%, #010C17 100%)', watermark: 'rgba(79, 195, 247, 0.12)', modeColor: '#4FC3F7', glow: 'rgba(2, 136, 209, 0.45)' },
-      { bg: 'radial-gradient(circle at 85% 75%, #283593 0%, #1A237E 35%, #0D1242 75%, #05071C 100%)', watermark: 'rgba(159, 168, 218, 0.12)', modeColor: '#9FA8DA', glow: 'rgba(40, 53, 147, 0.45)' }
+      {
+        bg: 'radial-gradient(circle at 85% 75%, #1565C0 0%, #0D3875 35%, #051838 75%, #020B1C 100%)',
+        watermark: 'rgba(100, 181, 246, 0.12)',
+        modeColor: '#64B5F6',
+        glow: 'rgba(21, 101, 192, 0.45)'
+      },
+      {
+        bg: 'radial-gradient(circle at 80% 80%, #00897B 0%, #004D40 35%, #02231E 75%, #01110E 100%)',
+        watermark: 'rgba(77, 182, 172, 0.13)',
+        modeColor: '#4DB6AC',
+        glow: 'rgba(0, 137, 123, 0.45)'
+      },
+      {
+        bg: 'radial-gradient(circle at 85% 75%, #6A1B9A 0%, #4A148C 35%, #250949 75%, #100322 100%)',
+        watermark: 'rgba(186, 104, 200, 0.13)',
+        modeColor: '#CE93D8',
+        glow: 'rgba(106, 27, 154, 0.45)'
+      },
+      {
+        bg: 'radial-gradient(circle at 80% 80%, #C2185B 0%, #880E4F 35%, #420424 75%, #1E0110 100%)',
+        watermark: 'rgba(240, 98, 146, 0.13)',
+        modeColor: '#F48FB1',
+        glow: 'rgba(194, 24, 91, 0.45)'
+      },
+      {
+        bg: 'radial-gradient(circle at 75% 70%, #E65100 0%, #BF360C 35%, #561603 75%, #260900 100%)',
+        watermark: 'rgba(255, 171, 145, 0.13)',
+        modeColor: '#FFAB91',
+        glow: 'rgba(230, 81, 0, 0.45)'
+      },
+      {
+        bg: 'radial-gradient(circle at 85% 75%, #0097A7 0%, #006064 35%, #002D33 75%, #001518 100%)',
+        watermark: 'rgba(77, 208, 225, 0.13)',
+        modeColor: '#4DD0E1',
+        glow: 'rgba(0, 151, 167, 0.45)'
+      },
+      {
+        bg: 'radial-gradient(circle at 80% 80%, #AD1457 0%, #6A1B9A 35%, #350849 75%, #160220 100%)',
+        watermark: 'rgba(244, 143, 177, 0.13)',
+        modeColor: '#F48FB1',
+        glow: 'rgba(173, 20, 87, 0.45)'
+      },
+      {
+        bg: 'radial-gradient(circle at 75% 70%, #8D6E63 0%, #4E342E 35%, #261612 75%, #120A08 100%)',
+        watermark: 'rgba(215, 204, 200, 0.13)',
+        modeColor: '#D7CCC8',
+        glow: 'rgba(141, 110, 99, 0.45)'
+      }
     ];
 
     const cards = [
@@ -358,23 +413,57 @@
       return rec;
     }
 
-    // --- SÍNTESIS DE VOZ CON INGLÉS AMERICANO NATURAL (TTS) ---
+    // --- SÍNTESIS DE VOZ NATURAL (PRIORIDAD VOCES NEURAL / NATURAL / ENHANCED) ---
     let isSpeaking = false;
     let selectedVoice = null;
 
-    function loadAmericanVoices() {
-      if (!('speechSynthesis' in window)) return;
+    function getBestAmericanVoice() {
+      if (!('speechSynthesis' in window)) return null;
       const voices = window.speechSynthesis.getVoices();
-      
-      // Priorizar voces en-US de alta calidad (Google US English, Natural, Samantha, David)
-      selectedVoice = voices.find(v => v.lang === 'en-US' && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha')))
-        || voices.find(v => v.lang === 'en-US' || v.lang === 'en_US')
-        || voices.find(v => v.lang.startsWith('en'));
+      if (!voices || voices.length === 0) return null;
+
+      // 1. Prioridad: Voces Neuronales/Naturales de Edge o Chrome (ej. "Jenny (Natural)", "Guy (Natural)", "Aria (Natural)")
+      let voice = voices.find(v => (v.lang === 'en-US' || v.lang === 'en_US') && 
+        (v.name.includes('Natural') || v.name.includes('Online (Natural)')));
+
+      // 2. Prioridad: Voces Premium/Enhanced de Apple (Ava, Samantha Enhanced, Zoe, Allison)
+      if (!voice) {
+        voice = voices.find(v => (v.lang === 'en-US' || v.lang === 'en_US') && 
+          (v.name.includes('Enhanced') || v.name.includes('Premium') || v.name.includes('Ava') || v.name.includes('Allison')));
+      }
+
+      // 3. Prioridad: Google US English en Chrome
+      if (!voice) {
+        voice = voices.find(v => (v.lang === 'en-US' || v.lang === 'en_US') && v.name.includes('Google US English'));
+      }
+
+      // 4. Prioridad: Samantha, David, Zira o cualquier en-US
+      if (!voice) {
+        voice = voices.find(v => (v.lang === 'en-US' || v.lang === 'en_US') && (v.name.includes('Samantha') || v.name.includes('David')));
+      }
+
+      // 5. Fallback a cualquier voz en-US disponible
+      if (!voice) {
+        voice = voices.find(v => v.lang === 'en-US' || v.lang === 'en_US' || v.lang.startsWith('en'));
+      }
+
+      return voice;
+    }
+
+    function updateVoiceSelection() {
+      selectedVoice = getBestAmericanVoice();
+      const badge = document.getElementById('voiceBadge');
+      if (selectedVoice) {
+        const cleanName = selectedVoice.name.replace('Microsoft ', '').replace('Online (Natural) - ', '').replace('English (United States)', '').trim();
+        badge.textContent = `Voz activa: ${cleanName} (en-US)`;
+      } else {
+        badge.textContent = 'Voz activa: Estándar (en-US)';
+      }
     }
 
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.onvoiceschanged = loadAmericanVoices;
-      loadAmericanVoices();
+      window.speechSynthesis.onvoiceschanged = updateVoiceSelection;
+      updateVoiceSelection();
     }
 
     function toggleSpeech() {
@@ -382,7 +471,6 @@
         alert('La síntesis de voz no está soportada en tu navegador.');
         return;
       }
-
       if (isSpeaking) {
         stopSpeech();
       } else {
@@ -397,10 +485,12 @@
       const textToRead = cards[currentIndex].respuesta;
       const utterance = new SpeechSynthesisUtterance(textToRead);
       utterance.lang = 'en-US';
-      utterance.rate = 0.96;
+      
+      // Calibración acústica para cadencia profesional B2+
+      utterance.rate = 0.94;
       utterance.pitch = 1.0;
 
-      if (!selectedVoice) loadAmericanVoices();
+      if (!selectedVoice) updateVoiceSelection();
       if (selectedVoice) utterance.voice = selectedVoice;
 
       utterance.onstart = () => {
@@ -441,6 +531,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       renderCard();
+      setTimeout(updateVoiceSelection, 300);
     });
 
     function applyPalette(index) {
@@ -449,6 +540,7 @@
       root.style.setProperty('--bg-gradient', p.bg);
       root.style.setProperty('--watermark', p.watermark);
       root.style.setProperty('--glow', p.glow);
+      root.style.setProperty('--theme-accent', p.modeColor);
       document.getElementById('modeTag').style.color = p.modeColor;
     }
 
