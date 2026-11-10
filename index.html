@@ -348,6 +348,10 @@
         respuesta: "Situation: At Bee Loyal Card, commercial stakeholders requested an automated loyalty rewards interface, but the underlying business rules and calculation parameters lacked technical specifications. Task: I needed to bridge commercial requirements and technical implementation to ensure clear backend API boundaries without rework. Action: I organized discovery workshops where I mapped user flows with wireframes and simplified diagrams, translating their business targets into concrete NestJS DTO validation rules and domain logic parameters. Result: We delivered the feature on schedule with zero rework, demonstrating how proactive alignment eliminates technical debt and guarantees stakeholder satisfaction."
       },
       {
+        pregunta: "Can you describe a full-stack project you are particularly proud of, and your role in it?",
+        respuesta: "In my previous role, a client required a dedicated customer portal to securely review account statements and transaction histories. As the full-stack developer, I owned both backend and frontend development. On the backend, using NestJS and MySQL, I implemented secure JWT authentication flows and built high-performance endpoints for dashboard metrics and date-range filtered statement queries. On the frontend, I used React, Redux, and Axios to faithfully implement the Figma design system. Following integration testing and a successful client UAT cycle, we deployed to production. To track business impact, I added onboarding analytics, which confirmed rapid user adoption and significantly reduced manual balance-inquiry support requests."
+      },
+      {
         pregunta: "How do you approach code reviews and maintain clean, maintainable code across a software development team?",
         respuesta: "I believe code reviews are a collaborative tool for quality assurance and knowledge sharing. When reviewing pull requests, I check for readability, adherence to SOLID principles, proper error handling, and test coverage. At Globant, we integrated Sonar for static code analysis to catch vulnerabilities and maintainability smells automatically. In my current workflow at Bee Loyal Card, I ensure that backend NestJS DTOs and React components are modular and well-documented. I always provide constructive feedback focused on code improvement rather than personal preference."
       },
@@ -400,8 +404,8 @@
         respuesta: "Writing efficient SQL is one of my core strengths, starting from my database support background at Logosoft to building full-stack data workflows at Bee Loyal Card. When dealing with slow queries, I analyze the database execution plan (EXPLAIN ANALYZE). I optimize performance by replacing inefficient subqueries with JOINs, applying proper indexes on filtering and join columns, avoiding SELECT *, and utilizing aggregate functions efficiently. This ensures operational dashboards and analytics endpoints receive fast data access."
       },
       {
-        pregunta: "How do you debug data-related issues, query performance bottlenecks, and schema discrepancies?",
-        respuesta: "Debugging data issues requires tracing data from the client request down to the database table. First, I verify the payload structure sent by the frontend using network inspector tools. Next, I inspect backend logs to verify how parameters are parsed into the database query. If query execution is slow or returns unexpected rows, I execute the query directly in PostgreSQL or SQL Server management tools, checking data types, NULL handling, and index usage. This end-to-end trace allows me to resolve data quality and performance bottlenecks swiftly."
+        pregunta: "Describe a situation where a client reported a data discrepancy, and how you investigated and resolved it.",
+        respuesta: "Situation: At my current job, a client reported that their account statement did not reflect the correct amount of loyalty points. Task: We needed to inform users proactively, contain the issue, and rapidly patch and validate the underlying data calculation. Action: I inspected the account statement data pipeline and identified an incorrectly mapped object property. I corrected the mapping in the backend service and validated the fix in a sandbox environment by sending test statements across multiple account scenarios. Result: Once approved, we resent the corrected statements. We then held a team retrospective to analyze the root cause and implemented automated regression checks to prevent similar discrepancies."
       },
       {
         pregunta: "What is your understanding of cloud data platforms like Snowflake and their role in data-driven full-stack applications?",
@@ -413,7 +417,7 @@
       },
       {
         pregunta: "Can you explain client-server architecture and key HTTP protocol fundamentals?",
-        respuesta: "Client-server architecture separates the user interface layer from the data management and business logic layer. The client initiates HTTP requests, and the server processes them and returns responses over TCP/IP. Key HTTP fundamentals include request methods—GET for retrieval, POST for creation, PUT/PATCH for updates, DELETE for removal—and status codes, such as 200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, and 500 Internal Server Error. Understanding request headers, CORS, and statelessness is fundamental for troubleshooting web integration issues."
+        respuesta: "Client-server architecture separates the user interface layer from the data management and business logic layer. The client initiates HTTP requests, and the server processes them over TCP/IP. Key HTTP fundamentals include request methods—GET for retrieval, POST for creation, PUT/PATCH for updates, DELETE for removal—and status codes, such as 200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, and 500 Internal Server Error. Understanding request headers, CORS, and statelessness is fundamental for troubleshooting web integration issues."
       },
       {
         pregunta: "How do you utilize Docker containers in your software development and deployment workflows?",
